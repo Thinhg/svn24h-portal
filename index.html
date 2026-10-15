@@ -1,0 +1,543 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SVN24H - Cổng Thông Tin Điện Tử Quốc Phòng & Bản Tin Chiến Sự</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;700&family=Oswald:wght@500;700&display=swap" rel="stylesheet">
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        mil: {
+                            dark: '#0f1410',
+                            panel: '#182019',
+                            olive: '#2d3b2d',
+                            accent: '#eab308',
+                            red: '#b91c1c',
+                            green: '#22c55e'
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Be Vietnam Pro', 'sans-serif'],
+                        heading: ['Oswald', 'sans-serif'],
+                        mono: ['JetBrains Mono', 'monospace']
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body { background-color: #0b0f0c; color: #e2e8f0; }
+        /* Hiệu ứng chữ chạy Breaking News */
+        @keyframes ticker {
+            0% { transform: translateX(100%); }
+            100% { transform: translateX(-100%); }
+        }
+        .animate-ticker {
+            display: inline-block;
+            white-space: nowrap;
+            animation: ticker 28s linear infinite;
+        }
+        .animate-ticker:hover { animation-play-state: paused; }
+        /* Con dấu mộc đỏ ảo */
+        .red-stamp {
+            border: 3px double #dc2626;
+            color: #dc2626;
+            transform: rotate(-12deg);
+            box-shadow: 0 0 0 1px #dc2626 inset;
+            user-select: none;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col font-sans">
+
+    <!-- 1. TOP BAR: TRẠNG THÁI TÁC CHIẾN & GIỜ SERVER -->
+    <div class="bg-black border-b border-neutral-800 text-xs py-1.5 px-4">
+        <div class="max-w-7xl mx-auto flex flex-wrap justify-between items-center gap-2">
+            <div class="flex items-center space-x-3">
+                <span id="defcon-badge" class="bg-green-900/60 text-green-400 border border-green-600 px-2 py-0.5 rounded font-mono font-bold flex items-center gap-1.5">
+                    <span class="w-2 h-2 rounded-full bg-green-400 animate-ping"></span>
+                    DEFCON 4: THƯỜNG TRỰC CHIẾN ĐẤU
+                </span>
+                <span class="hidden md:inline text-neutral-400 font-mono">KÊNH THÔNG TIN CHÍNH THỨC LỰC LƯỢNG VŨ TRANG (MILSIM)</span>
+            </div>
+            <div class="flex items-center space-x-4 font-mono text-neutral-300">
+                <span><i class="fa-solid fa-cloud-sun text-yellow-500 mr-1"></i> Căn cứ chính: 29°C / Quang mây</span>
+                <span id="server-clock" class="text-yellow-500 font-bold">00:00:00 GMT+7</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- 2. HEADER BANNER -->
+    <header class="bg-gradient-to-r from-[#142016] via-[#1d2e20] to-[#142016] border-b-2 border-yellow-600/80 py-5 px-4 shadow-lg">
+        <div class="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-4">
+            <div class="flex items-center space-x-4">
+                <!-- Quân hiệu / Logo -->
+                <div class="w-16 h-16 rounded-full bg-red-800 border-2 border-yellow-400 flex items-center justify-center shadow-lg shrink-0">
+                    <i class="fa-solid fa-star text-yellow-400 text-3xl"></i>
+                </div>
+                <div>
+                    <div class="text-yellow-500 font-mono text-xs tracking-widest uppercase font-semibold">Cơ quan Ngôn luận & Quản trị Dữ liệu Quân sự</div>
+                    <h1 class="font-heading text-3xl md:text-4xl font-bold tracking-wider text-white uppercase">
+                        THÔNG TẤN XÃ <span class="text-yellow-400">SVN24H</span>
+                    </h1>
+                    <p class="text-xs text-neutral-300 mt-0.5">Kỷ luật là sức mạnh - Thông tin nhanh chóng, chính xác, kịp thời</p>
+                </div>
+            </div>
+            <!-- Nút bấm nhanh -->
+            <div class="flex items-center gap-3">
+                <button onclick="switchTab('milpac')" class="bg-neutral-800 hover:bg-neutral-700 text-white border border-neutral-600 px-3.5 py-2 rounded text-sm font-medium transition flex items-center gap-2">
+                    <i class="fa-solid fa-id-card text-yellow-500"></i> Tra cứu Quân nhân
+                </button>
+                <button onclick="alert('Tính năng Đăng nhập Discord OAuth2 sẽ được kích hoạt ở Giai đoạn 4!')" class="bg-yellow-600 hover:bg-yellow-500 text-black font-bold px-4 py-2 rounded text-sm transition flex items-center gap-2 shadow">
+                    <i class="fa-brands fa-discord"></i> Sở Chỉ Huy
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- 3. NAVIGATION BAR (MENU CHÍNH) -->
+    <nav class="bg-[#121813] border-b border-neutral-800 sticky top-0 z-40 shadow">
+        <div class="max-w-7xl mx-auto px-4 flex overflow-x-auto no-scrollbar">
+            <button onclick="switchTab('news')" id="tab-news" class="nav-btn border-b-2 border-yellow-500 text-yellow-400 px-5 py-3.5 text-sm font-bold uppercase tracking-wider whitespace-nowrap flex items-center gap-2">
+                <i class="fa-solid fa-newspaper"></i> Bản tin 24h
+            </button>
+            <button onclick="switchTab('milpac')" id="tab-milpac" class="nav-btn border-b-2 border-transparent text-neutral-400 hover:text-white px-5 py-3.5 text-sm font-bold uppercase tracking-wider whitespace-nowrap flex items-center gap-2">
+                <i class="fa-solid fa-user-shield"></i> Hồ sơ Quân nhân (MilPac)
+            </button>
+            <button onclick="switchTab('directives')" id="tab-directives" class="nav-btn border-b-2 border-transparent text-neutral-400 hover:text-white px-5 py-3.5 text-sm font-bold uppercase tracking-wider whitespace-nowrap flex items-center gap-2">
+                <i class="fa-solid fa-file-signature"></i> Công báo & Quân lệnh
+            </button>
+            <button onclick="switchTab('orbat')" id="tab-orbat" class="nav-btn border-b-2 border-transparent text-neutral-400 hover:text-white px-5 py-3.5 text-sm font-bold uppercase tracking-wider whitespace-nowrap flex items-center gap-2">
+                <i class="fa-solid fa-sitemap"></i> Biên chế (ORBAT)
+            </button>
+        </div>
+    </nav>
+
+    <!-- 4. BREAKING NEWS TICKER -->
+    <div class="bg-red-950/50 border-b border-red-900/60 py-1.5 px-4 overflow-hidden flex items-center">
+        <span class="bg-red-700 text-white text-[11px] font-bold px-2 py-0.5 rounded uppercase tracking-wider shrink-0 z-10 mr-3 shadow">
+            <i class="fa-solid fa-bolt mr-1"></i> Tin khẩn
+        </span>
+        <div class="overflow-hidden w-full relative">
+            <div class="animate-ticker text-xs text-red-200 font-mono">
+                [THÔNG BÁO SỐ 14/TB-CQH]: Toàn bộ các đơn vị trực thuộc kiểm tra quân số chuẩn bị cho đợt diễn tập hiệp đồng tác chiến cuối tuần --- [QUÂN LỆNH]: Trung đoàn 3 mở đợt tuyển quân và huấn luyện chiến sĩ mới khóa tháng 10/2026 --- [CẢNH BÁO AN NINH]: Nghiêm cấm mọi hành vi tiết lộ tài liệu mật của Sở Chỉ Huy ra bên ngoài!
+            </div>
+        </div>
+    </div>
+
+    <!-- 5. MAIN CONTENT AREA -->
+    <main class="max-w-7xl mx-auto px-4 py-6 flex-grow w-full">
+
+        <!-- ==================== TAB 1: BẢN TIN 24H ==================== -->
+        <section id="section-news" class="space-y-6">
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <!-- Tin tâm điểm (Chiếm 2 cột) -->
+                <div class="lg:col-span-2 bg-mil-panel border border-neutral-800 rounded-lg overflow-hidden shadow-lg group">
+                    <div class="relative h-72 md:h-96 bg-neutral-900 overflow-hidden">
+                        <img src="https://images.unsplash.com/photo-1508614589041-895b88991e3e?auto=format&fit=crop&w=1200&q=80" alt="Diễn tập quân sự" class="w-full h-full object-cover opacity-80 group-hover:scale-105 transition duration-500">
+                        <div class="absolute inset-0 bg-gradient-to-t from-black via-black/50 to-transparent"></div>
+                        <div class="absolute bottom-4 left-4 right-4">
+                            <span class="bg-red-700 text-white text-xs font-bold px-2.5 py-1 rounded uppercase">Tiêu điểm Huấn luyện</span>
+                            <h2 class="text-xl md:text-2xl font-bold text-white mt-2 leading-snug">
+                                Cục Quân Huấn phối hợp cùng Trung đoàn 3 tổ chức tổng duyệt đội hình chuẩn bị cho Chiến dịch Mùa Thu 2026
+                            </h2>
+                            <p class="text-neutral-300 text-xs md:text-sm mt-2 line-clamp-2">
+                                Buổi tổng duyệt diễn ra với sự tham gia của hơn 100 cán bộ, chiến sĩ nhằm kiểm tra khả năng sẵn sàng chiến đấu, tác phong điều lệnh và hiệp đồng binh chủng trong điều kiện tác chiến ban đêm.
+                            </p>
+                            <div class="text-neutral-400 text-xs font-mono mt-3 flex items-center gap-4">
+                                <span><i class="fa-regular fa-clock mr-1"></i> 2 giờ trước</span>
+                                <span><i class="fa-solid fa-pen-nib mr-1"></i> Phòng Tuyên Huấn SVN24H</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Cột phải: Bảng thông tin tác chiến & Sự kiện sắp tới -->
+                <div class="space-y-6">
+                    <!-- Đồng hồ đếm ngược chiến dịch -->
+                    <div class="bg-mil-panel border border-neutral-800 rounded-lg p-4">
+                        <h3 class="font-heading text-sm uppercase tracking-wider text-yellow-500 border-b border-neutral-800 pb-2 mb-3 flex items-center justify-between">
+                            <span><i class="fa-solid fa-crosshairs mr-1.5"></i> Lịch Tác Chiến Tiếp Theo</span>
+                            <span class="text-[10px] bg-yellow-500/20 text-yellow-400 px-2 py-0.5 rounded font-mono">SẮP DIỄN RA</span>
+                        </h3>
+                        <div class="text-white font-bold text-base">Lễ Duyệt Binh & Kiểm Tra Quân Số Định Kỳ</div>
+                        <p class="text-xs text-neutral-400 mt-1">Địa điểm: Quảng trường Trung tâm Căn cứ Quân sự</p>
+                        <div class="grid grid-cols-3 gap-2 mt-4 text-center font-mono">
+                            <div class="bg-black/60 border border-neutral-800 p-2 rounded">
+                                <div class="text-xl font-bold text-yellow-400">02</div>
+                                <div class="text-[10px] text-neutral-500">NGÀY</div>
+                            </div>
+                            <div class="bg-black/60 border border-neutral-800 p-2 rounded">
+                                <div class="text-xl font-bold text-yellow-400">14</div>
+                                <div class="text-[10px] text-neutral-500">GIỜ</div>
+                            </div>
+                            <div class="bg-black/60 border border-neutral-800 p-2 rounded">
+                                <div class="text-xl font-bold text-yellow-400">35</div>
+                                <div class="text-[10px] text-neutral-500">PHÚT</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Góc Tuyên dương tuần -->
+                    <div class="bg-mil-panel border border-neutral-800 rounded-lg p-4">
+                        <h3 class="font-heading text-sm uppercase tracking-wider text-yellow-500 border-b border-neutral-800 pb-2 mb-3">
+                            <i class="fa-solid fa-medal mr-1.5"></i> Gương Mặt Quân Nhân Tiêu Biểu
+                        </h3>
+                        <div class="flex items-center gap-3.5">
+                            <div class="w-14 h-14 rounded bg-neutral-800 border border-yellow-500/60 flex items-center justify-center shrink-0">
+                                <i class="fa-solid fa-user-astronaut text-2xl text-yellow-400"></i>
+                            </div>
+                            <div>
+                                <div class="text-xs text-yellow-500 font-mono">Trung Đoàn 3 - Cục Quân Huấn</div>
+                                <div class="font-bold text-white text-sm">Đ/c Aquadeity (Lê Hữu Thịnh)</div>
+                                <p class="text-xs text-neutral-400 mt-0.5">Hoàn thành xuất sắc công tác chỉ huy và xây dựng giáo trình huấn luyện chiến thuật mới.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Danh sách tin tức bên dưới -->
+            <div>
+                <h3 class="font-heading text-lg uppercase tracking-wider text-white border-l-4 border-yellow-500 pl-3 mb-4">
+                    Tin Tức Quân Sự & Nội Chính Mới Nhất
+                </h3>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
+                    <!-- Bài báo 1 -->
+                    <article class="bg-mil-panel border border-neutral-800 rounded-lg p-4 hover:border-neutral-600 transition flex flex-col justify-between">
+                        <div>
+                            <span class="text-[11px] font-mono text-green-400 uppercase">[Huấn luyện]</span>
+                            <h4 class="font-bold text-white text-base mt-1 hover:text-yellow-400 cursor-pointer">
+                                Bế giảng khóa đào tạo Hạ sĩ quan chỉ huy khóa XII với tỷ lệ đạt chuẩn 98%
+                            </h4>
+                            <p class="text-xs text-neutral-400 mt-2 line-clamp-3">
+                                Các học viên đã trải qua bài kiểm tra sát hạch nghiêm ngặt về điều lệnh đội ngũ, kỹ năng đọc bản đồ tác chiến và xử lý tình huống khẩn cấp trên chiến trường.
+                            </p>
+                        </div>
+                        <div class="text-[11px] text-neutral-500 font-mono mt-4 pt-3 border-t border-neutral-800/80 flex justify-between">
+                            <span>15/10/2026</span>
+                            <span>Xem chi tiết &rarr;</span>
+                        </div>
+                    </article>
+
+                    <!-- Bài báo 2 -->
+                    <article class="bg-mil-panel border border-neutral-800 rounded-lg p-4 hover:border-neutral-600 transition flex flex-col justify-between">
+                        <div>
+                            <span class="text-[11px] font-mono text-yellow-400 uppercase">[Nhân sự & Tổ chức]</span>
+                            <h4 class="font-bold text-white text-base mt-1 hover:text-yellow-400 cursor-pointer">
+                                Công bố quyết định kiện toàn bộ máy chỉ huy Trung Đoàn 3 Dự Bị
+                            </h4>
+                            <p class="text-xs text-neutral-400 mt-2 line-clamp-3">
+                                Bộ Chỉ Huy chính thức trao quyết định bổ nhiệm và giao nhiệm vụ cho ban chỉ huy mới nhằm nâng cao chất lượng quản lý quân số và kỷ luật thép.
+                            </p>
+                        </div>
+                        <div class="text-[11px] text-neutral-500 font-mono mt-4 pt-3 border-t border-neutral-800/80 flex justify-between">
+                            <span>14/10/2026</span>
+                            <span>Xem chi tiết &rarr;</span>
+                        </div>
+                    </article>
+
+                    <!-- Bài báo 3 -->
+                    <article class="bg-mil-panel border border-neutral-800 rounded-lg p-4 hover:border-neutral-600 transition flex flex-col justify-between">
+                        <div>
+                            <span class="text-[11px] font-mono text-blue-400 uppercase">[Kỹ thuật Quân sự]</span>
+                            <h4 class="font-bold text-white text-base mt-1 hover:text-yellow-400 cursor-pointer">
+                                Nâng cấp hệ thống cơ sở dữ liệu quân nhân điện tử và cổng thông tin SVN24H
+                            </h4>
+                            <p class="text-xs text-neutral-400 mt-2 line-clamp-3">
+                                Toàn bộ hồ sơ quân nhân, lịch sử thăng quân hàm và khen thưởng nay được số hóa hoàn toàn, cho phép tra cứu trực tiếp theo thời gian thực.
+                            </p>
+                        </div>
+                        <div class="text-[11px] text-neutral-500 font-mono mt-4 pt-3 border-t border-neutral-800/80 flex justify-between">
+                            <span>12/10/2026</span>
+                            <span>Xem chi tiết &rarr;</span>
+                        </div>
+                    </article>
+                </div>
+            </div>
+        </section>
+
+        <!-- ==================== TAB 2: TRA CỨU HỒ SƠ QUÂN NHÂN (MILPAC) ==================== -->
+        <section id="section-milpac" class="hidden space-y-6">
+            <div class="bg-mil-panel border border-neutral-800 rounded-lg p-6">
+                <h2 class="font-heading text-xl uppercase tracking-wider text-yellow-400 flex items-center gap-2">
+                    <i class="fa-solid fa-database"></i> Hệ Thống Tra Cứu Hồ Sơ Quân Nhân Điện Tử (MILPAC)
+                </h2>
+                <p class="text-xs text-neutral-400 mt-1">
+                    Nhập Tên Quân Nhân (Roblox Username) hoặc Số Hiệu Quân Nhân để trích xuất hồ sơ từ Cơ sở dữ liệu Trung tâm. (Thử gõ: <code class="text-yellow-300 bg-black px-1.5 py-0.5 rounded">Aquadeity</code> hoặc <code class="text-yellow-300 bg-black px-1.5 py-0.5 rounded">SVN-001</code>)
+                </p>
+
+                <!-- Thanh tìm kiếm -->
+                <div class="mt-4 flex flex-col sm:flex-row gap-3">
+                    <input type="text" id="milpac-search-input" value="Aquadeity" placeholder="Nhập tên quân nhân hoặc số hiệu (VD: Aquadeity, SVN-001, SVN-002)..." class="flex-grow bg-black border border-neutral-700 rounded px-4 py-2.5 text-sm text-white font-mono focus:outline-none focus:border-yellow-500">
+                    <button onclick="searchMilpac()" class="bg-yellow-600 hover:bg-yellow-500 text-black font-bold px-6 py-2.5 rounded text-sm uppercase tracking-wider transition">
+                        <i class="fa-solid fa-magnifying-glass mr-1.5"></i> Trích xuất Hồ sơ
+                    </button>
+                </div>
+            </div>
+
+            <!-- Kết quả hiển thị Thẻ Quân Nhân -->
+            <div id="milpac-result" class="bg-mil-panel border-2 border-neutral-700 rounded-lg p-6 shadow-xl relative overflow-hidden">
+                <!-- Nội dung sẽ được JS render tự động -->
+            </div>
+        </section>
+
+        <!-- ==================== TAB 3: CÔNG BÁO & QUÂN LỆNH ==================== -->
+        <section id="section-directives" class="hidden space-y-6">
+            <div class="bg-[#fdfbf7] text-neutral-900 rounded-lg p-6 md:p-10 max-w-4xl mx-auto shadow-2xl border-4 border-double border-neutral-400 font-serif relative">
+                <!-- Quốc hiệu Tiêu ngữ ảo chuẩn RP -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-center border-b border-neutral-300 pb-4">
+                    <div>
+                        <div class="font-bold text-sm uppercase">BỘ TƯ LỆNH TỐI CAO</div>
+                        <div class="font-bold text-sm uppercase underline">CỤC QUÂN HUẤN</div>
+                        <div class="text-xs mt-1 font-mono">Số: 08/2026/QĐ-CQH</div>
+                    </div>
+                    <div>
+                        <div class="font-bold text-sm uppercase">CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM (MILSIM RP)</div>
+                        <div class="font-semibold text-xs underline">Độc lập - Tự do - Hạnh phúc</div>
+                        <div class="text-xs italic mt-1">Tổng Hành Dinh, ngày 15 tháng 10 năm 2026</div>
+                    </div>
+                </div>
+
+                <!-- Nội dung Quyết định -->
+                <div class="my-8 text-center">
+                    <h2 class="text-xl md:text-2xl font-bold uppercase">QUYẾT ĐỊNH</h2>
+                    <p class="font-bold text-sm mt-1">Về việc vận hành Cổng thông tin điện tử và Hệ thống quản lý hồ sơ quân nhân SVN24H</p>
+                </div>
+
+                <div class="space-y-3 text-sm leading-relaxed text-justify">
+                    <p><strong>Căn cứ</strong> Điều lệ tổ chức và hoạt động của Cộng đồng Mô phỏng Quân sự (Milsim);</p>
+                    <p><strong>Căn cứ</strong> chức năng, nhiệm vụ và quyền hạn của Cục Quân Huấn và Ban Chỉ Huy Trung Đoàn 3;</p>
+                    <p><strong>Xét đề nghị</strong> của Trưởng phòng Thông tin - Tuyên huấn,</p>
+                    <p class="text-center font-bold uppercase py-2">QUYẾT ĐỊNH:</p>
+                    <p><strong>Điều 1.</strong> Chính thức đưa vào vận hành Cổng thông tin điện tử Quốc phòng tại địa chỉ tên miền <strong>svn24h.id.vn</strong> làm kênh phát ngôn, đăng tải bản tin chiến sự và lưu trữ hồ sơ quân nhân chính thức.</p>
+                    <p><strong>Điều 2.</strong> Toàn thể sĩ quan, hạ sĩ quan, chiến sĩ thuộc các đơn vị có trách nhiệm cập nhật thông tin quân籍 và tuân thủ nghiêm ngặt quy định bảo mật thông tin trên hệ thống.</p>
+                    <p><strong>Điều 3.</strong> Quyết định này có hiệu lực kể từ ngày ký. Chỉ huy các đơn vị trực thuộc chịu trách nhiệm thi hành Quyết định này.</p>
+                </div>
+
+                <!-- Chữ ký & Con dấu đỏ -->
+                <div class="mt-10 grid grid-cols-2 text-sm">
+                    <div class="text-xs space-y-1">
+                        <div class="font-bold italic underline">Nơi nhận:</div>
+                        <div>- Như Điều 3;</div>
+                        <div>- Ban Chỉ Huy các đơn vị;</div>
+                        <div>- Lưu: VT, SVN24H.</div>
+                    </div>
+                    <div class="text-center relative">
+                        <div class="font-bold uppercase">TM. BAN CHỈ HUY</div>
+                        <div class="text-xs italic">TRUNG ĐOÀN TRƯỞNG TRUNG ĐOÀN 3</div>
+                        
+                        <!-- Con dấu mộc đỏ -->
+                        <div class="inline-block my-4 px-4 py-2 red-stamp font-sans font-extrabold text-xs uppercase tracking-wider">
+                            <div>ĐÃ ĐÓNG DẤU XÁC THỰC</div>
+                            <div class="text-[10px]">BỘ CHỈ HUY - SVN24H</div>
+                        </div>
+
+                        <div class="font-bold text-base mt-1">Aquadeity (Lê Hữu Thịnh)</div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ==================== TAB 4: SƠ ĐỒ BIÊN CHẾ (ORBAT) ==================== -->
+        <section id="section-orbat" class="hidden space-y-6">
+            <div class="bg-mil-panel border border-neutral-800 rounded-lg p-6">
+                <h2 class="font-heading text-xl uppercase tracking-wider text-yellow-400 mb-4">
+                    <i class="fa-solid fa-sitemap mr-2"></i> Sơ Đồ Tổ Chức & Biên Chế Đơn Vị (ORBAT)
+                </h2>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <!-- Đơn vị 1 -->
+                    <div class="bg-black/60 border-l-4 border-red-600 p-4 rounded">
+                        <div class="text-xs font-mono text-red-400">CẤP CHỈ HUY TỐI CAO</div>
+                        <h3 class="font-bold text-white text-lg mt-1">Cục Quân Huấn (VMTD)</h3>
+                        <p class="text-xs text-neutral-400 mt-1">Cơ quan đầu não phụ trách đào tạo, huấn luyện điều lệnh và chỉ đạo tác chiến toàn quân.</p>
+                        <div class="mt-3 pt-3 border-t border-neutral-800 text-xs font-mono text-green-400">
+                            ● Trạng thái: Hoạt động thường trực
+                        </div>
+                    </div>
+                    <!-- Đơn vị 2 -->
+                    <div class="bg-black/60 border-l-4 border-yellow-500 p-4 rounded">
+                        <div class="text-xs font-mono text-yellow-500">ĐƠN VỊ CHỦ LỰC / DỰ BỊ ĐỘNG VIÊN</div>
+                        <h3 class="font-bold text-white text-lg mt-1">Trung Đoàn 3 Dự Bị</h3>
+                        <p class="text-xs text-neutral-400 mt-1">Chỉ huy trưởng: Đ/c Aquadeity. Đơn vị nòng cốt phụ trách rèn luyện chiến sĩ và sẵn sàng cơ động.</p>
+                        <div class="mt-3 pt-3 border-t border-neutral-800 text-xs font-mono text-green-400">
+                            ● Trạng thái: Sẵn sàng chiến đấu (100%)
+                        </div>
+                    </div>
+                    <!-- Đơn vị 3 -->
+                    <div class="bg-black/60 border-l-4 border-blue-500 p-4 rounded">
+                        <div class="text-xs font-mono text-blue-400">CƠ QUAN NGÔN LUẬN & THÔNG TIN</div>
+                        <h3 class="font-bold text-white text-lg mt-1">Thông Tấn Xã SVN24H</h3>
+                        <p class="text-xs text-neutral-400 mt-1">Phụ trách công tác tuyên huấn, ghi hình chiến trường, phát hành công báo và quản trị dữ liệu số.</p>
+                        <div class="mt-3 pt-3 border-t border-neutral-800 text-xs font-mono text-green-400">
+                            ● Trạng thái: Trực tuyến 24/7
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- 6. FOOTER (TUYÊN BỐ MIỄN TRỪ TRÁCH NHIỆM CHUẨN RP) -->
+    <footer class="bg-black border-t border-neutral-800 py-6 px-4 text-xs text-neutral-500 mt-12">
+        <div class="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-4">
+            <div>
+                <div class="font-bold text-neutral-300 uppercase">CỔNG THÔNG TIN ĐIỆN TỬ THÔNG TẤN XÃ SVN24H (SVN24H.ID.VN)</div>
+                <p class="mt-1 max-w-2xl">
+                    <strong>Tuyên bố miễn trừ trách nhiệm (Disclaimer):</strong> Toàn bộ nội dung, cấp bậc, văn bản, đơn vị và sự kiện trên website này đều là hư cấu, phục vụ duy nhất cho mục đích giải trí nhập vai (Roleplay / Milsim) trong trò chơi điện tử, hoàn toàn không liên quan hay đại diện cho bất kỳ tổ chức, cơ quan nhà nước hay quân đội nào ngoài đời thực.
+                </p>
+            </div>
+            <div class="text-right font-mono shrink-0">
+                <div>Phiên bản: v1.0 (Phase 1 Architecture)</div>
+                <div class="text-yellow-600 mt-1">&copy; 2026 Phát triển bởi NexlyStudio / SVN24H</div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- JAVASCRIPT XỬ LÝ LOGIC FRONTEND -->
+    <script>
+        // 1. Đồng hồ thời gian thực GMT+7
+        function updateClock() {
+            const now = new Date();
+            const timeStr = now.toLocaleTimeString('vi-VN', { hour12: false });
+            const dateStr = now.toLocaleDateString('vi-VN');
+            document.getElementById('server-clock').innerText = `${dateStr} - ${timeStr} GMT+7`;
+        }
+        setInterval(updateClock, 1000);
+        updateClock();
+
+        // 2. Chuyển đổi Tab không cần tải lại trang
+        function switchTab(tabName) {
+            const tabs = ['news', 'milpac', 'directives', 'orbat'];
+            tabs.forEach(t => {
+                document.getElementById(`section-${t}`).classList.add('hidden');
+                const btn = document.getElementById(`tab-${t}`);
+                btn.classList.remove('border-yellow-500', 'text-yellow-400');
+                btn.classList.add('border-transparent', 'text-neutral-400');
+            });
+
+            document.getElementById(`section-${tabName}`).classList.remove('hidden');
+            const activeBtn = document.getElementById(`tab-${tabName}`);
+            activeBtn.classList.remove('border-transparent', 'text-neutral-400');
+            activeBtn.classList.add('border-yellow-500', 'text-yellow-400');
+        }
+
+        // 3. Dữ liệu Quân nhân mẫu (Ở Giai đoạn 2 & 3 sẽ lấy từ Supabase + Roblox API)
+        const mockDatabase = [
+            {
+                serviceNumber: "SVN-001",
+                username: "Aquadeity",
+                fullName: "Lê Hữu Thịnh",
+                rank: "Thượng tá / Trung Đoàn Trưởng",
+                unit: "Trung Đoàn 3 Dự Bị - Cục Quân Huấn",
+                status: "ĐANG TẠI NGŨ (ACTIVE)",
+                joinDate: "07/05/2025",
+                medals: ["Huân chương Quân công Hạng Nhất", "Huy chương Chiến sĩ Vẻ vang", "Huy hiệu Chỉ huy Xuất sắc"],
+                history: [
+                    "07/05/2025: Gia nhập Cục Quân Huấn (VMTD)",
+                    "03/08/2025: Bổ nhiệm chức vụ Trung Đoàn Trưởng Trung Đoàn 3 (Nhiệm kỳ I)",
+                    "25/01/2026: Tái đảm nhiệm chức vụ Trung Đoàn Trưởng Trung Đoàn 3 (Nhiệm kỳ II)"
+                ]
+            },
+            {
+                serviceNumber: "SVN-002",
+                username: "Soldier_VN",
+                fullName: "Chiến sĩ Mẫu",
+                rank: "Trung sĩ / Tiểu Đội Trưởng",
+                unit: "Đại Đội 1 - Trung Đoàn 3",
+                status: "ĐANG TẠI NGŨ (ACTIVE)",
+                joinDate: "12/09/2025",
+                medals: ["Chứng nhận Hoàn thành Huấn luyện Tân binh", "Chiến sĩ Thi đua Tuần"],
+                history: [
+                    "12/09/2025: Nhập ngũ khóa huấn luyện mùa thu",
+                    "01/02/2026: Thăng quân hàm Trung sĩ, bổ nhiệm Tiểu đội trưởng"
+                ]
+            }
+        ];
+
+        // 4. Hàm tìm kiếm và hiển thị Hồ sơ Quân nhân
+        function searchMilpac() {
+            const query = document.getElementById('milpac-search-input').value.trim().toLowerCase();
+            const container = document.getElementById('milpac-result');
+            
+            const person = mockDatabase.find(p => 
+                p.username.toLowerCase().includes(query) || 
+                p.serviceNumber.toLowerCase().includes(query) ||
+                p.fullName.toLowerCase().includes(query)
+            );
+
+            if (!person) {
+                container.innerHTML = `
+                    <div class="text-center py-8 text-red-400 font-mono">
+                        <i class="fa-solid fa-triangle-exclamation text-3xl mb-2"></i>
+                        <div>KHÔNG TÌM THẤY DỮ LIỆU QUÂN NHÂN TRONG HỆ THỐNG!</div>
+                        <div class="text-xs text-neutral-500 mt-1">Gợi ý: Thử tìm từ khóa "Aquadeity" hoặc "SVN-001"</div>
+                    </div>`;
+                return;
+            }
+
+            container.innerHTML = `
+                <div class="flex flex-col md:flex-row gap-6 items-start">
+                    <!-- Cột ảnh đại diện & Mã vạch -->
+                    <div class="w-full md:w-52 bg-black border border-neutral-700 p-4 rounded text-center shrink-0">
+                        <div class="w-32 h-32 mx-auto bg-neutral-900 border-2 border-yellow-500 rounded flex items-center justify-center mb-3">
+                            <i class="fa-solid fa-user-tie text-5xl text-yellow-500"></i>
+                        </div>
+                        <div class="font-mono text-xs text-yellow-400 font-bold">${person.serviceNumber}</div>
+                        <div class="font-bold text-white text-base mt-0.5">${person.username}</div>
+                        <div class="mt-2 inline-block bg-green-900/50 text-green-400 border border-green-600 text-[10px] font-mono px-2 py-0.5 rounded">
+                            ${person.status}
+                        </div>
+                    </div>
+
+                    <!-- Cột thông tin chi tiết -->
+                    <div class="flex-grow space-y-4 w-full">
+                        <div class="border-b border-neutral-700 pb-3 flex flex-wrap justify-between items-center gap-2">
+                            <div>
+                                <div class="text-xs font-mono text-neutral-400">HỒ SƠ LÝ LỊCH QUÂN NHÂN CHÍNH THỨC</div>
+                                <h3 class="text-2xl font-bold text-white uppercase">${person.fullName} <span class="text-yellow-500">(${person.username})</span></h3>
+                            </div>
+                            <span class="bg-yellow-500/20 border border-yellow-500 text-yellow-400 font-mono text-xs px-3 py-1 rounded font-bold">
+                                <i class="fa-solid fa-ranking-star mr-1"></i> ${person.rank}
+                            </span>
+                        </div>
+
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm bg-black/40 p-3.5 rounded border border-neutral-800">
+                            <div><span class="text-neutral-400">Đơn vị biên chế:</span> <strong class="text-white block">${person.unit}</strong></div>
+                            <div><span class="text-neutral-400">Ngày nhập ngũ:</span> <strong class="text-white font-mono block">${person.joinDate}</strong></div>
+                        </div>
+
+                        <!-- Huân huy chương -->
+                        <div>
+                            <div class="text-xs font-mono uppercase text-yellow-500 mb-2"><i class="fa-solid fa-award mr-1"></i> Huân chương & Khen thưởng:</div>
+                            <div class="flex flex-wrap gap-2">
+                                ${person.medals.map(m => `<span class="bg-red-950/80 border border-red-700 text-yellow-300 text-xs px-2.5 py-1 rounded flex items-center gap-1.5"><i class="fa-solid fa-medal text-yellow-400"></i> ${m}</span>`).join('')}
+                            </div>
+                        </div>
+
+                        <!-- Lịch sử công tác -->
+                        <div>
+                            <div class="text-xs font-mono uppercase text-yellow-500 mb-2"><i class="fa-solid fa-clock-rotate-left mr-1"></i> Lịch sử Quân ngũ (Service Record):</div>
+                            <ul class="space-y-1.5 text-xs font-mono text-neutral-300 bg-black/50 p-3 rounded border border-neutral-800">
+                                ${person.history.map(h => `<li><span class="text-yellow-500 mr-2">&raquo;</span>${h}</li>`).join('')}
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+        // Tự động hiển thị hồ sơ mẫu ngay khi mở tab
+        searchMilpac();
+    </script>
+</body>
+</html>
